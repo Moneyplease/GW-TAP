@@ -5,7 +5,7 @@ import numpy as np
 
 def fetch_event():
     client = GraceDb()
-    events = client.superevents(query = "category: Production", max_results = 500)
+    events = client.superevents(query = "category: Production", max_results = 10)
     results = []
     for event in events:
         results.append(event)
@@ -17,22 +17,23 @@ def download_skymap(superevent_id, output_dir="./skymaps"):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    files = client.files(superevent_id).json
+    files = client.files(superevent_id).json()
     skymap_filename = None
-    for file_info in files.keys():
+    for file_info in files:
         if "bayestar.multiorder.fits" in file_info:
             skymap_filename = file_info
             break
     if skymap_filename is None:
-        # print(f"No skymap found for superevent {superevent_id}.")
         return None
     
     filepath = os.path.join(output_dir, f"{superevent_id}_{skymap_filename}")
     if os.path.exists(filepath):
-        # print(f"Skymap for superevent {superevent_id} already exists at {filepath}.")
         return filepath
     
-    response = client.get_file(superevent_id, skymap_filename)
+    file_url = files[skymap_filename]
+    response = client.get_file(file_url)
+    with open(filepath, 'wb') as f:
+        f.write(response.read())
     return filepath
 
 def get_skymap_stats(fits_path):
